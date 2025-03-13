@@ -1,0 +1,45 @@
+---
+title: "Figures"
+author: "Mason Ibrahim"
+date: "2025-03-13"
+output: pdf_document
+---
+
+### Setup
+```{r}
+# Load Packages
+library(here)
+library(tidyverse)
+
+# Load in data
+kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
+```
+### Tidy Data
+```{r}
+kelp_disease_data <- kelp_data %>% 
+  filter(disease %in% c("SEVERE", "MILD", "YES", "WASTING", "BLACK SPOT"))
+```
+
+### Figure
+```{r}
+# Create a histogram of red urchin size distributions
+kelp_disease_plot <- ggplot(kelp_disease_data,
+                            aes(x = year)) +
+  geom_line(stat = "count",
+            size = 1) +  # Count occurrences per year
+  geom_point(stat = "count",
+             size = 2) +  # Add points for better visibility
+  labs(x = "Year", 
+       y = "Disease Count", 
+       color = "Disease",
+       caption = "       Figure 2: This figure shows histograms of disease presence found in California kelp forests and can be used to 
+       assess the condition of their health thoughout time.",
+       title = "Trends in Disease Occurrences Across Years") +
+  theme_light() +
+  theme(plot.caption = element_text(hjust = 0),
+        plot.title = element_text(hjust = .5))
+
+kelp_disease_plot
+```
+
+
