@@ -32,7 +32,7 @@ kelp_disease_plot <- ggplot(kelp_disease_data,
   labs(x = "Year", 
        y = "Disease Count", 
        color = "Disease",
-       caption = "       Figure 2: This figure shows histograms of disease presence found in California kelp forests and can be used to 
+       caption = "       Figure 2: This figure shows a line graph of disease presence found in California kelp forests and can be used to 
        assess the condition of their health thoughout time.",
        title = "Trends in Disease Occurrences Across Years") +
   theme_light() +
