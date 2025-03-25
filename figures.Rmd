@@ -10,15 +10,20 @@ output: pdf_document
 # Load Packages
 library(here)
 library(tidyverse)
-hi 
 
 # Load in data
 kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
+
+fish_data <- read_csv("pisco_fish.csv")
 ```
 ### Tidy Data
 ```{r}
 kelp_disease_data <- kelp_data %>% 
   filter(disease %in% c("SEVERE", "MILD", "YES", "WASTING", "BLACK SPOT"))
+
+#filter fish data
+target_species <- fish_data %>%
+  filter(classcode %in% c("SMIN", "SCAU", "SMEL", "SPUL"))
 ```
 
 ### Figure
@@ -43,4 +48,29 @@ kelp_disease_plot <- ggplot(kelp_disease_data,
 kelp_disease_plot
 ```
 
+### Fish Figure
+```{r, fig.cap = "This figure shows histograms of four different fish species commonly found in California kelp forests and can be used to assess relative normality of their distribution."}
+#labels for species
+labels <- c("SCAU"="Copper Rockfish", 
+                              "SMEL"="Black Rockfish",
+                              "SMIN"="Vermillion Rockfish", 
+                              "SPUL" = "California Sheephead")
+
+#histogram comparing species distribution
+fish_fig1 <- ggplot(target_species, aes(x=fish_tl,
+                                         fill = classcode)) +
+  geom_histogram() +
+  scale_fill_manual(values = c("pink", "purple", "cyan4", "lightblue")) +
+  labs(x = "Fish Length (cm)",
+       y = "Count",
+       title = "Comparison of Fish Species Length in California Kelp Forests") +
+  facet_grid(.~classcode, labeller = labeller(classcode = labels)) +
+  theme_bw() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+        axis.title = element_text(size = 13))  
+
+#view figure
+fish_fig1
+```
 
