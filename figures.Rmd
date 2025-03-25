@@ -10,6 +10,7 @@ output: pdf_document
 # Load Packages
 library(here)
 library(tidyverse)
+hi 
 
 # Load in data
 kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
