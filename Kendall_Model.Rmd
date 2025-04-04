@@ -9,3 +9,30 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Invertebrates to include in analysis: purple urchin, sunflower sea star, northern kelp crab
+
+## Setup
+```{r}
+#load necessary packages
+library(here)
+library(tidyverse)
+library(naniar)
+library(DHARMa)
+library(gtsummary)
+library(broom)
+
+#load dataset
+inverts <- read_csv("PISCO_kelpforest_swath.1.2.csv")
+
+```
+
+```{r}
+#tidy data
+inverts <- inverts %>%
+  filter(campus == "UCSC",
+         classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL")) %>%
+  #only include relevant columns for further analysis
+  select(campus, survey_year, site, zone, classcode, count, depth)
+ 
+```
+
