@@ -1,0 +1,11 @@
+---
+title: "Kendall Model"
+author: "Kendall Fitzgerald"
+date: "2025-04-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
