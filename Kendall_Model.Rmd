@@ -22,17 +22,85 @@ library(gtsummary)
 library(broom)
 
 #load dataset
-inverts <- read_csv("PISCO_kelpforest_swath.1.2.csv")
+inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 
 ```
 
 ```{r}
 #tidy data
-inverts <- inverts %>%
+inverts_kelp <- inverts_kelp %>%
   filter(campus == "UCSC",
-         classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL")) %>%
+         classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL", "MACPYRAD")) %>%
   #only include relevant columns for further analysis
-  select(campus, survey_year, site, zone, classcode, count, depth)
+  select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
  
+```
+
+## Step 1. Define Research Question
+How does the presence of different invertebrates correlate with kelp abundance?
+
+Null Hypothesis: Invertebrate presence does not have any correlation with kelp abundance.
+
+Alternative Hypothesis: Invertebrate presence does not have a correlation with kelp abundance.
+
+## Step 2. Examine data and possible correlations
+```{r}
+#create and examine figures of raw values
+
+#separate out species for this step
+kelp <- inverts_kelp %>%
+  filter(classcode == "MACPYRAD")
+
+nk_crab <- inverts_kelp %>%
+  filter(classcode == "PUGPRO")
+
+sun_star <- inverts_kelp %>%
+  filter(classcode == "PYCHEL")
+
+purp_urchin <- inverts_kelp %>%
+  filter(classcode == "STRPURAD")
+
+#histograms of species count
+
+#labels for species
+labels <- c("MACPYRJUV"="Giant Kelp", 
+            "PUGPRO"="Northern Kelp Crab",
+            "STRPURAD"="Purple Urchin", 
+            "PYCHEL" = "Sunflower Sea Star")
+
+#histogram of giant kelp
+kelp_fig1 <- ggplot(kelp, aes(x = survey_year, 
+                                      y = count)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+  
+kelp_fig1
+
+#histogram of Northern kelp crab
+crab_fig1 <- ggplot(nk_crab, aes(x = survey_year, 
+                                      y = count)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+crab_fig1
+
+#histogram of Sunflower Sea Star
+seastar_fig1 <- ggplot(sun_star, aes(x = survey_year, 
+                                      y = count)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+seastar_fig1
+
+#histogram of purple urchin 
+urchin_fig1 <- ggplot(purp_urchin, aes(x = survey_year, 
+                                      y = count)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+urchin_fig1
+
+
+
 ```
 
