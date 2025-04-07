@@ -20,6 +20,7 @@ library(naniar)
 library(DHARMa)
 library(gtsummary)
 library(broom)
+library(MASS)
 
 #load dataset
 inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
@@ -33,6 +34,24 @@ inverts_kelp <- inverts_kelp %>%
          classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL", "MACPYRAD")) %>%
   #only include relevant columns for further analysis
   select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
+
+#aggregate counts by site/year/species
+inverts_summarized <- inverts_kelp %>%
+  group_by(campus,site, survey_year, classcode, depth) %>%
+  summarise(
+    total_count = sum(count, na.rm = TRUE),
+    zone = first(zone),
+    .groups = "drop"
+  )
+
+#pivot to wide format
+inverts_wide <- inverts_summarized %>%
+  pivot_wider(
+    names_from = classcode,
+    values_from = total_count,
+    values_fill = list(total_count = 0)
+  )
+
  
 ```
 
@@ -41,64 +60,53 @@ How does the presence of different invertebrates correlate with kelp abundance?
 
 Null Hypothesis: Invertebrate presence does not have any correlation with kelp abundance.
 
-Alternative Hypothesis: Invertebrate presence does not have a correlation with kelp abundance.
+Alternative Hypothesis: Invertebrate presence does have a correlation with kelp abundance.
 
 ## Step 2. Examine data and possible correlations
 ```{r}
 #create and examine figures of raw values
 
-#separate out species for this step
-kelp <- inverts_kelp %>%
-  filter(classcode == "MACPYRAD")
-
-nk_crab <- inverts_kelp %>%
-  filter(classcode == "PUGPRO")
-
-sun_star <- inverts_kelp %>%
-  filter(classcode == "PYCHEL")
-
-purp_urchin <- inverts_kelp %>%
-  filter(classcode == "STRPURAD")
-
 #histograms of species count
 
-#labels for species
-labels <- c("MACPYRJUV"="Giant Kelp", 
-            "PUGPRO"="Northern Kelp Crab",
-            "STRPURAD"="Purple Urchin", 
-            "PYCHEL" = "Sunflower Sea Star")
-
 #histogram of giant kelp
-kelp_fig1 <- ggplot(kelp, aes(x = survey_year, 
-                                      y = count)) +
+kelp_fig <- ggplot(inverts_wide, aes(y = MACPYRAD,
+                                      x = survey_year)) +
   geom_bar(stat = "identity") +
+   labs(y = "Giant Kelp",
+       x = "Survey Year") +
   theme_bw()
-  
-kelp_fig1
+
+kelp_fig
 
 #histogram of Northern kelp crab
-crab_fig1 <- ggplot(nk_crab, aes(x = survey_year, 
-                                      y = count)) +
+crab_fig <- ggplot(inverts_wide, aes(y = PUGPRO,
+                                      x = survey_year)) +
   geom_bar(stat = "identity") +
+  labs(y = "Northern Kelp Crab",
+       x = "Survey Year") +
   theme_bw()
 
-crab_fig1
+crab_fig
 
 #histogram of Sunflower Sea Star
-seastar_fig1 <- ggplot(sun_star, aes(x = survey_year, 
-                                      y = count)) +
+seastar_fig <- ggplot(inverts_wide, aes(y = PYCHEL,
+                                      x = survey_year)) +
   geom_bar(stat = "identity") +
+     labs(y = "Sunflower Sea Star",
+       x = "Survey Year") +
   theme_bw()
 
-seastar_fig1
+seastar_fig
 
 #histogram of purple urchin 
-urchin_fig1 <- ggplot(purp_urchin, aes(x = survey_year, 
-                                      y = count)) +
+urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
+                                      x = survey_year)) +
   geom_bar(stat = "identity") +
+     labs(y = "Purple Urchin",
+       x = "Survey Year") +
   theme_bw()
 
-urchin_fig1
+urchin_fig
 
 
 
