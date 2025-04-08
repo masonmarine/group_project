@@ -15,11 +15,53 @@ getwd()
 
 ```{r}
 fish_data <- read.csv("pisco_fish.csv")
+taxa <- read.csv("pisco_taxon.csv")
 
+species <- taxa %>%
+  select(classcode, common_name)
+
+fish_data <- fish_data %>% 
+  left_join(species)
+  
+select_species <- fish_data %>%
+  filter(campus=="UCSC") %>%
+  group_by(year, classcode,common_name) %>%
+  summarize(abundance = sum(count)) %>%
+  filter(classcode=="SPUL" | classcode=="SATR" | classcode=="KGB" | classcode=="OCAL")
+
+ggplot(select_species, aes(year, abundance)) +
+  geom_line(aes(color=classcode))
+```
+california sheephead (SPUL)
+kelp rockfish (SATR)
+Kelp, Gopher, Black And Yellow, and Copper Rockfish Young of Year (KGB)
+senorita (OCAL)
+
+```{r}
 fish_data %>%
   filter(campus=="UCSC") %>%
-  group_by(year, month, classcode) %>%
+  group_by(year, classcode,common_name) %>%
   summarize(abundance = sum(count))
 ```
+
+KGB = YOY (Kelp, Gopher, Black and Yellow, Copper)
+SATR = Kelp Rockfish
+SCAR = Gopher Rockfish
+SCAU = Copper Rockfish
+SCHR = Black and Yellow Rockfish
+
+```{r}
+rockfish <- fish_data %>%
+  filter(campus=="UCSC") %>%
+  filter(classcode== "KGB" | classcode=="SATR" | classcode=="SCAR" | classcode=="SCAU" | classcode=="SCHR") %>%
+  group_by(year, classcode,common_name) %>%
+  summarize(abundance = sum(count))
+rockfish  
+```
+```{r}
+ggplot(rockfish, aes(year, abundance)) +
+  geom_line(aes(color=classcode))
+```
+
 
 model: fish count ~ species ~ zone ~ year ~ month ~ site
