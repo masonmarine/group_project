@@ -1,0 +1,61 @@
+---
+title: "Mason_Model"
+output: html_document
+---
+
+## Setup
+```{r}
+# Load Packages
+library(here)
+library(tidyverse)
+
+# Load in data
+kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
+
+fish_data <- read_csv("pisco_fish.csv")
+```
+
+### Tidy Data
+```{r}
+kelp_disease_data <- kelp_data %>% 
+  filter(disease %in% c("SEVERE",
+                        "MILD",
+                        "YES",
+                        "WASTING",
+                        "BLACK SPOT",
+                        "HEALTHY")) %>%
+  mutate(disease_clean = case_when(
+    disease %in% c("WASTING",
+                   "BLACK SPOT",
+                   "YES",
+                   "SEVERE",
+                   "MILD") ~ "Yes",
+    disease == "HEALTHY" ~ "No",
+    TRUE ~ NA_character_
+  )) %>% 
+  filter(campus == "UCSC") %>%
+  select(-observer,
+         -notes,
+         -site_name_old,
+         -campus,
+         -method,
+         -survey_year,
+         -disease) %>%
+  mutate(disease_binary = ifelse(disease_clean == "Yes", 1, 0),
+         month = factor(month),
+    year = factor(year),
+    site = factor(site)
+  ) %>% 
+  drop_na()
+```
+
+
+```{r}
+model <- glm(
+  disease_binary ~ depth + size + month + year + zone,
+  data = kelp_disease_data,
+  family = "binomial"
+)
+summary(model)
+```
+
