@@ -59,22 +59,22 @@ kelp_disease_data <- kelp_data %>%
 ### 2. Examine Data and Possible Correlations
 ```{r}
 # Raw values for kelp disease
-chart_kelp_disease <- ggplot(kelp_disease_data,
-                      aes(x = ) + 
-  geom_histogram() +
+chart_kelp_disease <- ggplot(kelp_disease_data, aes(x = disease_clean)) +
+  geom_bar() +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 90,
-                                   hjust = 1))
-chart_sv_length
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-# Raw values for sex
-chart_sex <- ggplot(df_side_blotched,
-                      aes(x = sex)) + 
+chart_kelp_disease
+
+
+# Raw values for depth
+chart_depth <- ggplot(kelp_disease_data,
+                      aes(x = depth)) + 
   geom_bar() +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90,
                                    hjust = 1))
-chart_sex
+chart_depth
 
 # Raw values for vegetation zone
 chart_vegetation_zone <- ggplot(df_side_blotched,
