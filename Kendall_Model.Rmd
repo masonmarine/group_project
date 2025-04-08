@@ -16,11 +16,12 @@ Invertebrates to include in analysis: purple urchin, sunflower sea star, norther
 #load necessary packages
 library(here)
 library(tidyverse)
+library(dplyr)
 library(naniar)
 library(DHARMa)
 library(gtsummary)
 library(broom)
-library(MASS)
+library(lme4)
 
 #load dataset
 inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
@@ -33,7 +34,7 @@ inverts_kelp <- inverts_kelp %>%
   filter(campus == "UCSC",
          classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL", "MACPYRAD")) %>%
   #only include relevant columns for further analysis
-  select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
+  dplyr::select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
 
 #aggregate counts by site/year/species
 inverts_summarized <- inverts_kelp %>%
@@ -108,7 +109,39 @@ urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
 
 urchin_fig
 
+```
 
 
+### Performing correlation tests between independent variables
+```{r}
+# make dataframe with continuous predictor variables only
+predictors <- inverts_wide %>%
+  dplyr::select(PUGPRO, STRPURAD, PYCHEL)
+
+# Calculate the correlation matrix
+cor_matrix <- cor(predictors, use = "complete.obs")
+
+# View the correlation matrix
+cor_matrix
+```
+
+Because correlation does not exceed 0.6 between all variables, the test showed little to no correlation between the continuous predictor variables. Because of this, we can move forward with step 3. 
+
+## Step 3 - Fit regression model
+```{r}
+# Check the mean and variance of the count variable for overdispersion
+mean(inverts_kelp$count)
+var(inverts_kelp$count)
+
+inverts_wide$zone <- factor(inverts_wide$zone, levels = c("INNER", "MID", "OUTER"))
+
+# Fit a Poisson GLM 
+kelp_poisson <- glm(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL+ zone,
+                    data = inverts_wide, 
+                    family = poisson())
+
+
+# View the summary of the model
+summary(kelp_poisson)
 ```
 
