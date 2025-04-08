@@ -7,13 +7,20 @@ output: html_document
 ```{r}
 # Load Packages
 library(here)
+library(ggplot2)
 library(tidyverse)
+library(naniar)
+library(gtsummary)
+library(broom)
+library(DHARMa)
 
 # Load in data
 kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 
 fish_data <- read_csv("pisco_fish.csv")
 ```
+### 1. Define Research Question
+#### Are depth, size, month, year, and zone significant predictors of disease presence in kelp in UCSC's kelp forest?
 
 ### Tidy Data
 ```{r}
@@ -49,13 +56,65 @@ kelp_disease_data <- kelp_data %>%
   drop_na()
 ```
 
+### 2. Examine Data and Possible Correlations
+```{r}
+# Raw values for kelp disease
+chart_kelp_disease <- ggplot(kelp_disease_data,
+                      aes(x = ) + 
+  geom_histogram() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90,
+                                   hjust = 1))
+chart_sv_length
+
+# Raw values for sex
+chart_sex <- ggplot(df_side_blotched,
+                      aes(x = sex)) + 
+  geom_bar() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90,
+                                   hjust = 1))
+chart_sex
+
+# Raw values for vegetation zone
+chart_vegetation_zone <- ggplot(df_side_blotched,
+                      aes(x = zone)) + 
+  geom_bar() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90,
+                                   hjust = 1))
+chart_vegetation_zone
+
+# Raw values for whole tails
+chart_tails <- ggplot(df_side_blotched,
+                      aes(x = tail)) + 
+  geom_bar() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90,
+                                   hjust = 1))
+chart_tails
+```
+
+### 3. Fit Regression Model
+### 4. Evaluate Model Diagnostics
+### 5. Interpret the Model and Communicate the Results
+
+
 
 ```{r}
 model <- glm(
-  disease_binary ~ depth + size + month + year + zone,
+  disease_binary ~
+    depth +
+    size +
+    month +
+    year +
+    zone,
   data = kelp_disease_data,
   family = "binomial"
 )
 summary(model)
+
+simulateResiduals(model) %>% 
+  plot()
 ```
 
