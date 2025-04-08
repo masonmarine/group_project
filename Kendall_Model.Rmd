@@ -36,23 +36,26 @@ inverts_kelp <- inverts_kelp %>%
   #only include relevant columns for further analysis
   dplyr::select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
 
-
-#aggregate counts by site/year/species
 inverts_summarized <- inverts_kelp %>%
-  group_by(campus,site, survey_year, classcode, depth) %>%
+  group_by(campus, site, survey_year, classcode, depth) %>%
   summarise(
     total_count = sum(count, na.rm = TRUE),
     zone = first(zone),
     .groups = "drop"
   )
 
-#pivot to wide format
-inverts_wide <- inverts_summarized %>%
-  pivot_wider(
-    names_from = classcode,
-    values_from = total_count,
-    values_fill = list(total_count = 0)
-  )
+# Group by species (classcode), year (survey_year), and zone
+inverts_wide_grouped <- inverts_summarized %>%
+  group_by(classcode, survey_year, zone) %>%
+  summarise(across(c(total_count), sum, na.rm = TRUE), .groups = "drop")
+
+# Pivot to wide format if needed
+inverts_wide <- inverts_wide_grouped %>%
+  pivot_wider(names_from = classcode, values_from = total_count, values_fill = list(total_count = 0))
+
+
+# Create a cleaned dataset 
+inverts_wide <- na.omit(inverts_wide[, c("MACPYRAD", "PUGPRO", "STRPURAD", "PYCHEL", "zone", "survey_year")])
 
  
 ```
@@ -68,14 +71,12 @@ Alternative Hypothesis: Invertebrate presence does have a correlation with kelp 
 ```{r}
 #create and examine figures of raw values
 
-#bar graphs of species count
+#histograms of species count
 
-#bar graph of giant kelp
-kelp_fig <- ggplot(inverts_wide, aes(y = MACPYRAD,
-                                      x = survey_year)) +
-  geom_bar(stat = "identity") +
-   labs(y = "Giant Kelp",
-       x = "Survey Year") +
+#histograms of giant kelp
+kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD)) +
+  geom_histogram() +
+   labs(x = "Giant Kelp") +
   theme_bw()
 
 kelp_fig
@@ -90,6 +91,13 @@ crab_fig <- ggplot(inverts_wide, aes(y = PUGPRO,
 
 crab_fig
 
+crab_fig <- ggplot(inverts_wide, aes(x = PUGPRO)) +
+  geom_histogram() +
+   labs(x = "Northern Kelp Crab") +
+  theme_bw()
+
+crab_fig
+
 #bar graph of Sunflower Sea Star
 seastar_fig <- ggplot(inverts_wide, aes(y = PYCHEL,
                                       x = survey_year)) +
@@ -99,6 +107,13 @@ seastar_fig <- ggplot(inverts_wide, aes(y = PYCHEL,
   theme_bw()
 
 seastar_fig
+
+seastar_fig <- ggplot(inverts_wide, aes(x = PYCHEL)) +
+  geom_histogram() +
+   labs(x = "Giant Kelp") +
+  theme_bw()
+
+kelp_fig
 
 #bar graph of purple urchin 
 urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
@@ -111,8 +126,9 @@ urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
 urchin_fig
 
 #histogram of zone
-zone_fig <- ggplot(inverts_summarized, aes(x = zone)) +
-  geom_histogram() +
+zone_fig <- ggplot(inverts_kelp, aes(x = zone,
+                                     y = count)) +
+  geom_bar(stat = "identity") +
      labs(y = "Count",
        x = "Zone") +
   theme_bw()
@@ -140,21 +156,80 @@ Because correlation does not exceed 0.6 between all variables, the test showed l
 
 ## Step 3 - Fit regression model
 ```{r}
-# Check the mean and variance of the count variable for overdispersion
-mean(inverts_kelp$count)
-var(inverts_kelp$count)
+# Check the mean and variance of the count variable
+mean(inverts_wide$MACPYRAD)
+var(inverts_wide$MACPYRAD)
+
+#because the variance is way higher than the mean, we cannot use Poisson regression
+
+#move forward with zero-inflated negative binomial model, call relevant package
+library(pscl)
 
 #transform categorical variables into factors
 inverts_wide$zone <- factor(inverts_wide$zone, 
                             levels = c("INNER", "MID", "OUTER"))
 
-# Fit a Poisson GLM 
-kelp_poisson <- glm(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
+# Fit a Zero-inflated Negative Binomial Model
+zinb_kelp <- zeroinfl(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone | PUGPRO + STRPURAD + PYCHEL + zone, 
                     data = inverts_wide, 
-                    family = poisson())
+                    dist = "negbin")
+
+```
 
 
-# View the summary of the model
-summary(kelp_poisson)
+## Step 4 - Evaluate Model Diagnostics
+```{r}
+#Examine overall model output
+summary(zinb_kelp)
+
+
+# Check mean and variance of the ZINB model
+# Use the fitted values from the ZINB model
+fitted_y_zip <- fitted(zinb_kelp)
+
+# Calculate mean and variance of fitted values
+mean_fitted_y_zip <- mean(fitted_y_zip)
+var_fitted_y_zip <- var(fitted_y_zip)
+
+mean_fitted_y_zip
+var_fitted_y_zip
+
+#plot residuals 
+
+# Plot residuals vs fitted values
+residuals_zip <- residuals(zinb_kelp, type = "pearson")  # Pearson residuals
+plot(fitted(zip_kelp), residuals_zip, 
+     xlab = "Fitted Values", ylab = "Pearson Residuals", 
+     main = "Residuals vs Fitted for ZINB Model")
+abline(h = 0, col = "red")  # Add a reference line at 0
+
+# QQ plot for residuals
+qqnorm(residuals_zip, main = "QQ Plot of Residuals (ZINB)")
+qqline(residuals_zip, col = "red")
+
+# Plot zero-inflation probabilities
+plot(fitted(zinb_kelp, type = "zero"), inverts_wide$MACPYRAD == 0, 
+     xlab = "Zero-Inflation Probability", 
+     ylab = "Observed Zeroes", 
+     main = "Zero-Inflation Prediction vs Actual Zeros")
+
+# Deviance residuals plot
+deviance_residuals <- residuals(zinb_kelp, type = "deviance")
+plot(fitted(zinb_kelp), deviance_residuals, 
+     xlab = "Fitted Values", ylab = "Deviance Residuals", 
+     main = "Deviance Residuals vs Fitted")
+abline(h = 0, col = "red")
+
+
+
+```
+
+Because of residual plots, it seems that there are excess zero's in the response variable. I will move onto a Zero-Inflated Poisson Regression model.  
+
+```{r}
+overdispersion <- sum(residuals(kelp_poisson, type = "pearson")^2) / df.residual(kelp_poisson)
+print(overdispersion)
+
+
 ```
 
