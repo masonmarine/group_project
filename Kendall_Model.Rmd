@@ -29,12 +29,13 @@ inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 ```
 
 ```{r}
-#tidy data
+#tidy data, addition of recruits and juveniles does not make a difference 
 inverts_kelp <- inverts_kelp %>%
   filter(campus == "UCSC",
-         classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL", "MACPYRAD")) %>%
+         classcode %in% c("PUGPRO", "STRPURAD", "STRPURREC", "PYCHEL", "MACPYRAD", "MACPYJUV")) %>%
   #only include relevant columns for further analysis
   dplyr::select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
+
 
 #aggregate counts by site/year/species
 inverts_summarized <- inverts_kelp %>%
@@ -67,9 +68,9 @@ Alternative Hypothesis: Invertebrate presence does have a correlation with kelp 
 ```{r}
 #create and examine figures of raw values
 
-#histograms of species count
+#bar graphs of species count
 
-#histogram of giant kelp
+#bar graph of giant kelp
 kelp_fig <- ggplot(inverts_wide, aes(y = MACPYRAD,
                                       x = survey_year)) +
   geom_bar(stat = "identity") +
@@ -79,7 +80,7 @@ kelp_fig <- ggplot(inverts_wide, aes(y = MACPYRAD,
 
 kelp_fig
 
-#histogram of Northern kelp crab
+#bar graph of Northern kelp crab
 crab_fig <- ggplot(inverts_wide, aes(y = PUGPRO,
                                       x = survey_year)) +
   geom_bar(stat = "identity") +
@@ -89,7 +90,7 @@ crab_fig <- ggplot(inverts_wide, aes(y = PUGPRO,
 
 crab_fig
 
-#histogram of Sunflower Sea Star
+#bar graph of Sunflower Sea Star
 seastar_fig <- ggplot(inverts_wide, aes(y = PYCHEL,
                                       x = survey_year)) +
   geom_bar(stat = "identity") +
@@ -99,7 +100,7 @@ seastar_fig <- ggplot(inverts_wide, aes(y = PYCHEL,
 
 seastar_fig
 
-#histogram of purple urchin 
+#bar graph of purple urchin 
 urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
                                       x = survey_year)) +
   geom_bar(stat = "identity") +
@@ -108,6 +109,15 @@ urchin_fig <- ggplot(inverts_wide, aes(y = STRPURAD,
   theme_bw()
 
 urchin_fig
+
+#histogram of zone
+zone_fig <- ggplot(inverts_summarized, aes(x = zone)) +
+  geom_histogram() +
+     labs(y = "Count",
+       x = "Zone") +
+  theme_bw()
+
+zone_fig
 
 ```
 
@@ -123,6 +133,7 @@ cor_matrix <- cor(predictors, use = "complete.obs")
 
 # View the correlation matrix
 cor_matrix
+
 ```
 
 Because correlation does not exceed 0.6 between all variables, the test showed little to no correlation between the continuous predictor variables. Because of this, we can move forward with step 3. 
@@ -133,10 +144,12 @@ Because correlation does not exceed 0.6 between all variables, the test showed l
 mean(inverts_kelp$count)
 var(inverts_kelp$count)
 
-inverts_wide$zone <- factor(inverts_wide$zone, levels = c("INNER", "MID", "OUTER"))
+#transform categorical variables into factors
+inverts_wide$zone <- factor(inverts_wide$zone, 
+                            levels = c("INNER", "MID", "OUTER"))
 
 # Fit a Poisson GLM 
-kelp_poisson <- glm(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL+ zone,
+kelp_poisson <- glm(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
                     data = inverts_wide, 
                     family = poisson())
 
