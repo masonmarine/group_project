@@ -1,0 +1,25 @@
+---
+title: "Vicky Model"
+author: "Vicky Fong"
+date: "2025-04-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(dplyr)
+
+getwd()
+```
+
+```{r}
+fish_data <- read.csv("pisco_fish.csv")
+
+fish_data %>%
+  filter(campus=="UCSC") %>%
+  group_by(year, month, classcode) %>%
+  summarize(abundance = sum(count))
+```
+
+model: fish count ~ species ~ zone ~ year ~ month ~ site
