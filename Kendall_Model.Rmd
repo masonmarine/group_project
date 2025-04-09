@@ -135,16 +135,18 @@ labels <- c("MACPYRAD"="Giant Kelp",
 species_separate <- ggplot(species_counts, aes(x = survey_year, y = total_count)) +
   geom_point(aes(color = classcode), size = 2, alpha = 0.7) +
   geom_smooth(aes(color = classcode), method = "loess", se = FALSE) +
+  geom_vline(xintercept = 2013, linetype = "longdash", color = "black")  +
   facet_wrap(~ classcode, scales = "free_y", labeller = labeller(classcode = labels))+ 
-  labs(title = "Species Counts Over Time",
+  labs(title = "Distribution of Species Used in Model Over Time",
        x = "Survey Year",
        y = "Total Count") +
   theme_bw() +
   theme(strip.text = element_text(face = "bold"),
         axis.text.x = element_text(angle = 45, hjust = 1),
-       legend.position = "none")
+        legend.position = "none")
 
 species_separate
+
 ```
 
 
