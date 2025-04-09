@@ -18,7 +18,6 @@ library(here)
 library(tidyverse)
 library(dplyr)
 library(naniar)
-library(DHARMa)
 library(gtsummary)
 library(lme4)
 library(MASS)
@@ -117,22 +116,35 @@ species_counts <- inverts_summarized %>%
   group_by(classcode, survey_year) %>%
   summarise(total_count = sum(total_count, na.rm = TRUE), .groups = "drop")
 
-#create plot to show species counts by year
-species_abundance <- ggplot(species_counts, aes(x = survey_year, 
-                           y = total_count, 
-                           color = classcode, 
-                           group = classcode)) +
-  geom_line() + 
-  geom_point() +
-  labs(title = "Species Counts by Year", 
-       x = "Year", 
-       y = "Total Count", 
-       color = "Species") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-species_abundance
+### Relationship figures of species through time 
+```{r}
+#first tidy data so that it can be more easily understood by ggplot; summarize the counts by species and year (not separated by zone)
+species_counts <- inverts_summarized %>%
+  group_by(classcode, survey_year) %>%
+  summarise(total_count = sum(total_count, na.rm = TRUE), .groups = "drop")
 
+#create labels for graph
+labels <- c("MACPYRAD"="Giant Kelp", 
+                              "PUGPRO"="Northern Kelp Crab",
+                              "PYCHEL"="Southern Sea Star", 
+                              "STRPURAD" = "Purple Urchin")
+
+#create facet-wrapped figure to show species counts by year
+species_separate <- ggplot(species_counts, aes(x = survey_year, y = total_count)) +
+  geom_point(aes(color = classcode), size = 2, alpha = 0.7) +
+  geom_smooth(aes(color = classcode), method = "loess", se = FALSE) +
+  facet_wrap(~ classcode, scales = "free_y", labeller = labeller(classcode = labels))+ 
+  labs(title = "Species Counts Over Time",
+       x = "Survey Year",
+       y = "Total Count") +
+  theme_bw() +
+  theme(strip.text = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+       legend.position = "none")
+
+species_separate
 ```
 
 
