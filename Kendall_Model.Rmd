@@ -36,6 +36,7 @@ inverts_kelp <- inverts_kelp %>%
   #only include relevant columns for further analysis
   dplyr::select(campus, survey_year, site, zone, classcode, count, size, disease, depth)
 
+#further tidy data based on relevant rows and sum count data 
 inverts_summarized <- inverts_kelp %>%
   group_by(campus, site, survey_year, classcode, depth) %>%
   summarise(
@@ -44,23 +45,23 @@ inverts_summarized <- inverts_kelp %>%
     .groups = "drop"
   )
 
-# Group by species (classcode), year (survey_year), and zone
+#group by species (classcode), year (survey_year), and zone
 inverts_wide_grouped <- inverts_summarized %>%
   group_by(classcode, survey_year, zone) %>%
   summarise(across(c(total_count), sum, na.rm = TRUE), .groups = "drop")
 
-# Pivot to wide format to separate out species
+#pivot to wide format to separate out species
 inverts_wide <- inverts_wide_grouped %>%
   pivot_wider(names_from = classcode, values_from = total_count, values_fill = list(total_count = 0))
 
 ```
 
 ## Step 1. Define Research Question
-How does the presence of different invertebrates correlate with kelp abundance?
+How does the presence of different invertebrates and habitat zone correlate with kelp abundance?
 
-Null Hypothesis: Invertebrate presence does not have any correlation with kelp abundance.
+Null Hypothesis: Invertebrate presence and habitat zone do not have any correlation with kelp abundance.
 
-Alternative Hypothesis: Invertebrate presence does have a correlation with kelp abundance.
+Alternative Hypothesis: Invertebrate presence and habitat zone do have a correlation with kelp abundance.
 
 ## Step 2. Examine data and possible correlations
 ```{r}
@@ -68,7 +69,7 @@ Alternative Hypothesis: Invertebrate presence does have a correlation with kelp 
 
 #histograms of species count
 
-#histograms of giant kelp
+#histogram of giant kelp
 kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD)) +
   geom_histogram() +
    labs(x = "Giant Kelp") +
@@ -100,7 +101,6 @@ urchin_fig <- ggplot(inverts_wide, aes(x = STRPURAD)) +
 
 urchin_fig
 
-
 #bar graph of zone distribution
 zone_fig <- ggplot(inverts_kelp, aes(x = zone,
                                      y = count,
@@ -112,16 +112,37 @@ zone_fig <- ggplot(inverts_kelp, aes(x = zone,
 
 zone_fig
 
+# Summarize the counts by species and year (not separated by zone)
+species_counts <- inverts_summarized %>%
+  group_by(classcode, survey_year) %>%
+  summarise(total_count = sum(total_count, na.rm = TRUE), .groups = "drop")
+
+#create plot to show species counts by year
+species_abundance <- ggplot(species_counts, aes(x = survey_year, 
+                           y = total_count, 
+                           color = classcode, 
+                           group = classcode)) +
+  geom_line() + 
+  geom_point() +
+  labs(title = "Species Counts by Year", 
+       x = "Year", 
+       y = "Total Count", 
+       color = "Species") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+species_abundance
+
 ```
 
 
 ### Performing correlation tests between independent variables
 ```{r}
-# make dataframe with continuous predictor variables only
+#make dataframe with continuous predictor variables only
 predictors <- inverts_wide %>%
   dplyr::select(PUGPRO, STRPURAD, PYCHEL)
 
-# Calculate the correlation matrix
+#calculate the correlation matrix
 cor_matrix <- cor(predictors, use = "complete.obs")
 
 # View the correlation matrix
@@ -133,19 +154,15 @@ Because correlation does not exceed 0.6 between all variables, the test showed l
 
 ## Step 3 - Fit regression model
 ```{r}
-# Check the mean and variance of the count variable
+#check the mean and variance of the count variable
 mean(inverts_wide$MACPYRAD)
 var(inverts_wide$MACPYRAD)
 
 #because the variance is significantly higher than the mean, we cannot use Poisson regression so we will move forward with negative binomial regression due to overdispersion
 
-# Fit a negative binomial regression model
+#fit a negative binomial regression model
 kelp_glm_nb <- glm.nb(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
                        data = inverts_wide)
-
-summary(kelp_glm_nb)
-
-plot(kelp_glm_nb)
 
 ```
 
@@ -155,18 +172,30 @@ plot(kelp_glm_nb)
 #Examine overall model output
 summary(kelp_glm_nb)
 
-#plot model output  
+#plot model output residuals  
 plot(kelp_glm_nb)
 
+#take out relevant outliers based on residual plots
+inverts_final <- inverts_wide[-c(26, 29, 63), ]
 
+#refit model without outliers
+kelp_glm_refit <- glm.nb(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
+                       data = inverts_final)
+
+#re-examine model output
+summary(kelp_glm_refit)
+
+#re-examine model residuals
+plot(kelp_glm_refit)
 
 ```
 
- 
 
+## Step 5 - Interpret the model and communicate the results
 ```{r}
-
+#create figure that shows model results
 
 
 ```
 
+The Negative Binomial regression model suggests that the abundance of Giant Kelp in study areas of Northern California kelp forests is significantly influenced by the presence of Sunflower Sea Stars (p < 0.001) and Purple Urchins (p < 0.001). Northern kelp crabs (p = 0.42) and zone by contrast are not significant predictors for giant kelp abundance. 
