@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Invertebrates to include in analysis: purple urchin, sunflower sea star, northern kelp crab
 
 ## Setup
+
 ```{r warning=FALSE}
 #load necessary packages
 library(here)
@@ -56,6 +57,7 @@ inverts_wide <- inverts_wide_grouped %>%
 ```
 
 ## Step 1. Define Research Question
+
 How does the presence of different invertebrates and habitat zone correlate with kelp abundance?
 
 Null Hypothesis: Invertebrate presence and habitat zone do not have any correlation with kelp abundance.
@@ -63,6 +65,7 @@ Null Hypothesis: Invertebrate presence and habitat zone do not have any correlat
 Alternative Hypothesis: Invertebrate presence and habitat zone do have a correlation with kelp abundance.
 
 ## Step 2. Examine data and possible correlations
+
 ```{r warning=FALSE}
 #create and examine figures of raw values
 
@@ -116,7 +119,8 @@ zone_fig
 
 ```
 
-### Relationship figures of species through time 
+### Relationship figures of species through time
+
 ```{r warning=FALSE, fig.cap = "This figure shows the abundance of species used in the model over time. The black dotted line sitting at the year 2013 indicates the first large marine heatwave during that time period. This heatwave significantly contributed to the alteration of the kelp forest ecosystem."}
 #first tidy data so that it can be more easily understood by ggplot; summarize the counts by species and year (not separated by zone)
 species_counts <- inverts_summarized %>%
@@ -148,8 +152,8 @@ species_separate
 
 ```
 
-
 ### Performing correlation tests between independent variables
+
 ```{r, warning = FALSE}
 #make dataframe with continuous predictor variables only
 predictors <- inverts_wide %>%
@@ -163,9 +167,10 @@ cor_matrix
 
 ```
 
-Because correlation does not exceed 0.6 between all variables, the test showed little to moderate correlation between the continuous predictor variables. Since this is the case, we can move forward with step 3. 
+Because correlation does not exceed 0.6 between all variables, the test showed little to moderate correlation between the continuous predictor variables. Since this is the case, we can move forward with step 3.
 
 ## Step 3 - Fit regression model
+
 ```{r, warning = FALSE}
 #check the mean and variance of the count variable
 mean(inverts_wide$MACPYRAD)
@@ -179,8 +184,8 @@ kelp_glm_nb <- glm.nb(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
 
 ```
 
-
 ## Step 4 - Evaluate Model Diagnostics
+
 ```{r, warning = FALSE}
 #Examine overall model output
 summary(kelp_glm_nb)
@@ -209,7 +214,42 @@ AIC(kelp_glm_nb, kelp_glm_refit)
 The results of the Akaike Information Criterion (AIC) test showed that the re-fit model had a lower AIC score and, therefore, was a better fit of the data.
 
 ## Step 5 - Interpret the model and communicate the results
+
 ```{r eval=FALSE, include=FALSE}
+library(broom)
+library(knitr)
+library(gt)
+
+#create table from model
+model_table <- tidy(kelp_glm_refit)
+
+#tidy table
+model_table_simple <- broom::tidy(kelp_glm_refit) %>%
+  dplyr::select(term, estimate, p.value) %>%
+  dplyr::mutate(
+    term = dplyr::case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "PUGPRO" ~ "Northern Kelp Crab (PUGPRO)",
+      term == "STRPURAD" ~ "Purple Urchin (STRPURAD)",
+      term == "PYCHEL" ~ "Sunflower Sea Star (PYCHEL)",
+      term == "zoneMID" ~ "Zone: Mid",
+      term == "zoneOUTER" ~ "Zone: Outer",
+      TRUE ~ term),
+    Significance = dplyr::case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01 ~ "**",
+      p.value < 0.05 ~ "*",
+      p.value < 0.1 ~ ".",
+      TRUE ~ ""),
+    estimate = round(estimate, 3),
+    p.value = signif(p.value, 3)) %>%
+  dplyr::rename(
+    Predictor = term,
+    Coefficient = estimate,
+    `P-value` = p.value)
+
+#use kable package to make it a more attractive output
+kable(model_table_simple, caption = "Negative Binomial Regression Model Coefficients")
 
 
 ```
