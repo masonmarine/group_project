@@ -134,7 +134,7 @@ disease_counts <- kelp_disease_data %>%
   labs(
     title = "Total Number of Invertebrates by Disease Severity and Species",
     x = "Disease Severity (Health Status)",
-    y = "Total Invertebrate Count",
+    y = "Log Transformed Total Invertebrate Count",
     subtitle = "Distribution of disease severity by species",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
@@ -164,7 +164,7 @@ depth_counts <- ggplot(kelp_disease_data_summary, aes(x = depth, y = total_count
   labs(
     title = "Total Number of Invertebrates by Depth",
     x = "Depth (meters)",
-    y = "Total Invertebrate Count",
+    y = "Log Transformed Total Invertebrate Count",
     subtitle = "Total number of invertebrates by depth and species",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
@@ -195,7 +195,7 @@ size_counts <- kelp_disease_data %>%
   labs(
     title = "Total Number of Invertebrates by Size",
     x = "Size (cm)",
-    y = "Total Count of Invertebrates",
+    y = "Log Transformed Total Count of Invertebrates",
     subtitle = "Total number of invertebrates by size and species",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
@@ -224,7 +224,7 @@ invert_counts <- kelp_disease_data %>%
   labs(
     title = "Total Number of Each Invertebrate Species",
     x = "Species",
-    y = "Total Count",
+    y = "Log Transformed Total Count",
     subtitle = "Total number of individuals per species",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
@@ -252,7 +252,7 @@ zone_counts <- kelp_disease_data %>%
   labs(
     title = "Total Number of Invertebrates by Zone",
     x = "Zone",
-    y = "Total Invertebrate Count",
+    y = "Log Transformed Total Invertebrate Count",
     subtitle = "Total number of individuals per species in each zone",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
