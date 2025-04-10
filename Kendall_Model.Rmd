@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Invertebrates to include in analysis: purple urchin, sunflower sea star, northern kelp crab
 
 ## Setup
-```{r}
+```{r warning=FALSE}
 #load necessary packages
 library(here)
 library(tidyverse)
@@ -27,7 +27,7 @@ inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 
 ```
 
-```{r}
+```{r message=FALSE}
 #tidy data, the addition of recruit and juvenile classcodes does not make a difference so will move forward with only adult species 
 inverts_kelp <- inverts_kelp %>%
   filter(campus == "UCSC",
@@ -63,7 +63,7 @@ Null Hypothesis: Invertebrate presence and habitat zone do not have any correlat
 Alternative Hypothesis: Invertebrate presence and habitat zone do have a correlation with kelp abundance.
 
 ## Step 2. Examine data and possible correlations
-```{r}
+```{r warning=FALSE}
 #create and examine figures of raw values
 
 #histograms of species count
@@ -114,7 +114,7 @@ zone_fig
 ```
 
 ### Relationship figures of species through time 
-```{r}
+```{r warning=FALSE}
 #first tidy data so that it can be more easily understood by ggplot; summarize the counts by species and year (not separated by zone)
 species_counts <- inverts_summarized %>%
   group_by(classcode, survey_year) %>%
@@ -148,7 +148,7 @@ species_separate
 
 
 ### Performing correlation tests between independent variables
-```{r}
+```{r, warning = FALSE}
 #make dataframe with continuous predictor variables only
 predictors <- inverts_wide %>%
   dplyr::select(PUGPRO, STRPURAD, PYCHEL)
@@ -164,7 +164,7 @@ cor_matrix
 Because correlation does not exceed 0.6 between all variables, the test showed little to moderate correlation between the continuous predictor variables. Since this is the case, we can move forward with step 3. 
 
 ## Step 3 - Fit regression model
-```{r}
+```{r, warning = FALSE}
 #check the mean and variance of the count variable
 mean(inverts_wide$MACPYRAD)
 var(inverts_wide$MACPYRAD)
@@ -179,7 +179,7 @@ kelp_glm_nb <- glm.nb(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
 
 
 ## Step 4 - Evaluate Model Diagnostics
-```{r}
+```{r, warning = FALSE}
 #Examine overall model output
 summary(kelp_glm_nb)
 
@@ -203,10 +203,9 @@ plot(kelp_glm_refit)
 
 
 ## Step 5 - Interpret the model and communicate the results
-```{r}
-#create figure that shows model results
+```{r eval=FALSE, include=FALSE}
 
 
 ```
 
-The Negative Binomial regression model suggests that the abundance of Giant Kelp in study areas of Northern California kelp forests is significantly influenced by the presence of Sunflower Sea Stars (B = 0.004, p = 3.62e-05) and Purple Urchins (B = -9.691e-06, p = 0.0003). Northern kelp crabs (B = -0.0156, p = 0.42), Mid Zone (B = 0.176, p = 0.266), and Outer Zone (B = -0.295, p = 0.0878) by contrast are not significant predictors for Giant Kelp abundance. 
+The Negative Binomial regression model suggests that the abundance of Giant Kelp in study areas of Northern California kelp forests is significantly influenced by the presence of Sunflower Sea Stars (B = 0.004, p = 3.62e-05) and Purple Urchins (B = -9.691e-06, p = 0.0003). Northern kelp crabs (B = -0.0156, p = 0.42), Mid Zone (B = 0.176, p = 0.266), and Outer Zone (B = -0.295, p = 0.0878) by contrast are not significant predictors for Giant Kelp abundance. The significant negative relationship between Giant Kelp and Purple Urchins shows that as urchin populations increase, kelp abundance decreases which makes logical sense as urchins predate on kelp. When left unchecked, they can turn entire kelp forests into "Urchin Barrens" with little to no kelp population. The strong positive relationship between Sunflower Sea Star abundance and kelp abundance also supports this narrative, as Sea Stars primarily predate on urchins and keep their population in check, which in turn helps the kelp population.
