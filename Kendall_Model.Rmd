@@ -199,8 +199,12 @@ summary(kelp_glm_refit)
 #re-examine model residuals
 plot(kelp_glm_refit)
 
+#perform Akaike Information Criterion test to compare the two models
+AIC(kelp_glm_nb, kelp_glm_refit)
+
 ```
 
+The results of the Akaike Information Criterion (AIC) test showed that the re-fit model had a lower AIC score and, therefore, was a better fit of the data.
 
 ## Step 5 - Interpret the model and communicate the results
 ```{r eval=FALSE, include=FALSE}
