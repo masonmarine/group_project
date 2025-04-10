@@ -28,7 +28,7 @@ inverts_kelp <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 ```
 
 ```{r}
-#tidy data, addition of recruits and juveniles does not make a difference 
+#tidy data, the addition of recruit and juvenile classcodes does not make a difference so will move forward with only adult species 
 inverts_kelp <- inverts_kelp %>%
   filter(campus == "UCSC",
          classcode %in% c("PUGPRO", "STRPURAD", "PYCHEL", "MACPYRAD")) %>%
@@ -100,7 +100,7 @@ urchin_fig <- ggplot(inverts_wide, aes(x = STRPURAD)) +
 
 urchin_fig
 
-#bar graph of zone distribution
+#bar graph of zone distribution (categorical variable)
 zone_fig <- ggplot(inverts_kelp, aes(x = zone,
                                      y = count,
                                      fill = zone)) +
@@ -110,11 +110,6 @@ zone_fig <- ggplot(inverts_kelp, aes(x = zone,
   theme_bw()
 
 zone_fig
-
-# Summarize the counts by species and year (not separated by zone)
-species_counts <- inverts_summarized %>%
-  group_by(classcode, survey_year) %>%
-  summarise(total_count = sum(total_count, na.rm = TRUE), .groups = "drop")
 
 ```
 
@@ -136,13 +131,15 @@ species_separate <- ggplot(species_counts, aes(x = survey_year, y = total_count)
   geom_point(aes(color = classcode), size = 2, alpha = 0.7) +
   geom_smooth(aes(color = classcode), method = "loess", se = FALSE) +
   geom_vline(xintercept = 2013, linetype = "longdash", color = "black")  +
-  facet_wrap(~ classcode, scales = "free_y", labeller = labeller(classcode = labels))+ 
-  labs(title = "Distribution of Species Used in Model Over Time",
+  facet_wrap(~ classcode, scales = "free_y", labeller = labeller(classcode = labels))+
+  labs(title = "Distribution of Kelp Forest Species Abundance Used in Model Over Time",
        x = "Survey Year",
-       y = "Total Count") +
+       y = "Total Count",
+       caption = "Figure 1. This figure shows the abundance of species used in the model over time. The black dotted line sitting at the year 2013 indicates the first large marine heatwave during that time period. This heatwave significantly contributed to the alteration of the kelp forest ecosystem.") +
   theme_bw() +
   theme(strip.text = element_text(face = "bold"),
         axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
         legend.position = "none")
 
 species_separate
@@ -164,7 +161,7 @@ cor_matrix
 
 ```
 
-Because correlation does not exceed 0.6 between all variables, the test showed little to moderate correlation between the continuous predictor variables. Because of this, we can move forward with step 3. 
+Because correlation does not exceed 0.6 between all variables, the test showed little to moderate correlation between the continuous predictor variables. Since this is the case, we can move forward with step 3. 
 
 ## Step 3 - Fit regression model
 ```{r}
@@ -212,4 +209,4 @@ plot(kelp_glm_refit)
 
 ```
 
-The Negative Binomial regression model suggests that the abundance of Giant Kelp in study areas of Northern California kelp forests is significantly influenced by the presence of Sunflower Sea Stars (p < 0.001) and Purple Urchins (p < 0.001). Northern kelp crabs (p = 0.42) and zone by contrast are not significant predictors for giant kelp abundance. 
+The Negative Binomial regression model suggests that the abundance of Giant Kelp in study areas of Northern California kelp forests is significantly influenced by the presence of Sunflower Sea Stars (B = 0.004, p = 3.62e-05) and Purple Urchins (B = -9.691e-06, p = 0.0003). Northern kelp crabs (B = -0.0156, p = 0.42), Mid Zone (B = 0.176, p = 0.266), and Outer Zone (B = -0.295, p = 0.0878) by contrast are not significant predictors for Giant Kelp abundance. 
