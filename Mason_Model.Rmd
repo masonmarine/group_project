@@ -14,6 +14,7 @@ library(gtsummary)
 library(broom)
 library(DHARMa)
 library(lme4)
+library(dplyr)
 
 # Load in data
 kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
@@ -95,17 +96,8 @@ kelp_disease_data <- kelp_data %>%
     zone = factor(zone, levels = c("INNER",
                                    "MID",
                                    "OUTER"))) %>% 
-  # Tidy dataset by selecting only relevant columns
-  select(-observer,
-         -notes,
-         -site_name_old,
-         -campus,
-         -method,
-         -survey_year,
-         -disease,
-         -day,
-         -classcode,
-         -invertebrates) %>%
+  dplyr::select(-observer, -notes, -site_name_old, -campus, -method,
+                -survey_year, -disease, -day, -classcode, -invertebrates) %>% 
   drop_na()
 ```
 
@@ -283,7 +275,7 @@ kelp_disease_data_grouped <- kelp_disease_data %>%
   summarize(total_count = sum(count), .groups = "drop")
 
 cor(kelp_disease_data_grouped %>%
-      select(depth, size))
+       dplyr::select(depth, size))
 ```
 
 ### 3. Fit Regression Model
@@ -366,4 +358,63 @@ plot(hat_values, kelp_disease_data_cooks$residuals,
 abline(h = 0, col = "red")
 
 testOutliers(simulation_output)
+```
+
+
+# Visualize Model Output
+```{r}
+# Get the fixed effects
+fixed_effects <- summary(model_binary2)$coefficients
+fixed_effects_df <- data.frame(
+  term = rownames(fixed_effects),
+  estimate = fixed_effects[, "Estimate"],
+  std_error = fixed_effects[, "Std. Error"],
+  z_value = fixed_effects[, "z value"],
+  p_value = fixed_effects[, "Pr(>|z|)"]
+)
+
+
+# Add confidence intervals
+fixed_effects_df$conf_low <- fixed_effects_df$estimate - 1.96 * fixed_effects_df$std_error
+fixed_effects_df$conf_high <- fixed_effects_df$estimate + 1.96 * fixed_effects_df$std_error
+
+# Modify predictor names
+fixed_effects_df$term <- gsub("zoneOUTER", "Outer Zone", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("month11", "November", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("zoneMID", "Mid Zone", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("month9", "September", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("size", "Size (cm)", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("month10", "October", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("depth", "Depth (m)", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("month7", "July", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("month8", "August", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("speciesRed Urchin Adult", "Red Urchin", fixed_effects_df$term)
+fixed_effects_df$term <- gsub("speciesPurple Urchin Adult", "Purple Urchin", fixed_effects_df$term)
+
+# Define the order of the predictors
+predictor_order <- c("Depth (m)", "Size (cm)", "Purple Urchin", "Red Urchin", 
+                     "July", "August", "September", "October", "November", 
+                     "Mid Zone", "Outer Zone")
+
+# Reorder the 'term' factor based on the custom order
+fixed_effects_df$term <- factor(fixed_effects_df$term, levels = predictor_order)
+
+# Remove rows with NA in the term column before plotting
+fixed_effects_df <- fixed_effects_df[!is.na(fixed_effects_df$term), ]
+
+# Enhanced plot with reordered predictors
+ggplot(fixed_effects_df, aes(x = term, y = estimate)) +
+  geom_point(color = "#2C3E50", size = 4, shape = 16) +
+  geom_errorbar(aes(ymin = conf_low, ymax = conf_high), 
+                width = 0.2, color = "#2980B9", size = 1) +
+  coord_flip() +
+  theme_minimal(base_size = 15) + 
+  theme(
+    axis.text.x = element_text(color = "#7F8C8D", size = 12),
+    axis.text.y = element_text(color = "#7F8C8D", size = 12),
+    axis.title.x = element_text(color = "#34495E", size = 14, face = "bold"),
+    axis.title.y = element_text(color = "#34495E", size = 14, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold", color = "#2C3E50", hjust = 0.5)
+  ) +
+  labs(x = "Predictor", y = "Estimate", title = "Fixed Effects with 95% Confidence Intervals")
 ```
