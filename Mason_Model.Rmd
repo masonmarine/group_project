@@ -319,6 +319,7 @@ model_binary2 <- glmer(
 
 # Summary of the model
 summary(model_binary2)
+tbl_regression(model_binary2)
 
 
 
@@ -363,4 +364,6 @@ plot(hat_values, kelp_disease_data_cooks$residuals,
      xlab = "Leverage (Hat-Values)", ylab = "Residuals",
      main = "Residuals vs Leverage")
 abline(h = 0, col = "red")
+
+testOutliers(simulation_output)
 ```
