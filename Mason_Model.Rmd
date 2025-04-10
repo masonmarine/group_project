@@ -13,108 +13,335 @@ library(naniar)
 library(gtsummary)
 library(broom)
 library(DHARMa)
+library(lme4)
 
 # Load in data
 kelp_data <- read_csv("PISCO_kelpforest_swath.1.2.csv")
 
 fish_data <- read_csv("pisco_fish.csv")
+
+# custom_theme
+custom_theme <- function() {
+  theme_minimal() +  # Use minimal theme for a clean look
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),  # Customize title
+    plot.subtitle = element_text(size = 12, face = "italic"),  # Subtitle style
+    axis.title.x = element_text(size = 14),  # X-axis title style
+    axis.title.y = element_text(size = 14),  # Y-axis title style
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),  # Rotate x-axis labels
+    axis.text.y = element_text(size = 12),  # Y-axis text style
+    strip.text = element_text(size = 12, face = "bold"),  # Facet labels customization
+    plot.caption = element_text(size = 10, face = "italic"),  # Caption style
+    legend.position = "top"  # Position the legend at the top for clarity
+  )
+}
 ```
-### 1. Define Research Question
-#### Are depth, size, month, year, and zone significant predictors of disease presence in kelp in UCSC's kelp forest?
+
+# Step 1: Define the Research Question
+
+# Research Question: What environmental and biological factors (e.g., depth, size, species, site) are associated with different severities of disease in invertebrates in UCSC kelp forests?
+
+# Hypotheses:
+# Null Hypothesis (H₀): None of the predictors (depth, size, species, etc.) are significantly associated with disease severity.
+# Alternative Hypothesis (H₁): At least one of the predictors significantly affects disease severity.
 
 ### Tidy Data
 ```{r}
 kelp_disease_data <- kelp_data %>% 
-  filter(disease %in% c("SEVERE",
-                        "MILD",
-                        "YES",
-                        "WASTING",
-                        "BLACK SPOT",
-                        "HEALTHY")) %>%
-  mutate(disease_clean = case_when(
-    disease %in% c("WASTING",
-                   "BLACK SPOT",
-                   "YES",
-                   "SEVERE",
-                   "MILD") ~ "Yes",
-    disease == "HEALTHY" ~ "No",
-    TRUE ~ NA_character_
+  filter(disease %in% c("SEVERE", "MILD", "HEALTHY", "YES", "WASTING", "BLACK SPOT")) %>%
+  mutate(disease_severity = factor(
+    case_when(
+      disease == "HEALTHY" ~ "Healthy",  # Healthy
+      disease == "MILD" ~ "Mild",        # Mild
+      disease == "YES" ~ "Mild",         # Yes treated as Mild
+      disease == "WASTING" ~ "Severe",   # Wasting treated as Severe
+      disease == "BLACK SPOT" ~ "Severe",# Black spot treated as Severe
+      disease == "SEVERE" ~ "Severe"     # Severe
+    ),
+   levels = c("Healthy", "Mild", "Severe")  # Simplify to a regular factor
   )) %>% 
+ mutate(disease_severity_binary = ifelse(disease_severity == "Healthy", 0, 1)) %>% 
+  filter(!is.na(disease_severity)) %>%
   filter(campus == "UCSC") %>%
+  mutate(
+    invertebrates = case_when(
+      classcode == "PATMIN" ~ NA_character_,
+      classcode == "PISGIG" ~ "Giant Spined Star",
+      classcode == "STRPURAD" ~ "Purple Urchin Adult",
+      classcode == "DERIMB" ~ NA_character_,
+      classcode == "MESFRAAD" ~ "Red Urchin Adult",
+      classcode == "PISOCH" ~ NA_character_,
+      classcode == "LEPHEXAD" ~ NA_character_,
+      classcode == "STRPURREC" ~ NA_character_,
+      classcode == "MESFRAREC" ~ NA_character_,
+      classcode == "MEDAEQ" ~ NA_character_,
+      classcode == "PISBRE" ~ NA_character_,
+      classcode == "PISSPP" ~ NA_character_,
+      TRUE ~ NA_character_
+    )) %>%
+  filter(!is.na(invertebrates)) %>%
+  filter(!is.na(size) & size > 0) %>% 
+  mutate(
+    month = factor(month),
+    year = factor(year),
+    site = factor(site),
+    species = factor(invertebrates),
+    transect = factor(transect, levels = c("1", "2")),
+    zone = factor(zone, levels = c("INNER",
+                                   "MID",
+                                   "OUTER"))) %>% 
   select(-observer,
          -notes,
          -site_name_old,
          -campus,
          -method,
          -survey_year,
-         -disease) %>%
-  mutate(disease_binary = ifelse(disease_clean == "Yes", 1, 0),
-         month = factor(month),
-    year = factor(year),
-    site = factor(site)
-  ) %>% 
+         -disease,
+         -day,
+         -classcode,
+         -invertebrates) %>%
   drop_na()
 ```
 
 ### 2. Examine Data and Possible Correlations
+
+# Check for missing values
 ```{r}
-# Raw values for kelp disease
-chart_kelp_disease <- ggplot(kelp_disease_data, aes(x = disease_clean)) +
-  geom_bar() +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+summary(kelp_disease_data)
+sapply(kelp_disease_data, function(x) sum(is.na(x)))
+```
+# Visualize distributions
+```{r}
+# Calculate optimal bins using the Rice rule
+kelp_disease_data <- kelp_disease_data %>%
+  mutate(optimal_bins = round(2 * (n() / 3)^(1/3)))
 
-chart_kelp_disease
+
+# Visualize distribution of disease (binary outcome)
+disease_counts <- kelp_disease_data %>%
+  group_by(disease_severity, species) %>%
+  summarize(total_count = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = disease_severity, y = total_count, fill = species)) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_fill_manual(
+    values = c(
+      "Red Urchin Adult" = "red",
+      "Purple Urchin Adult" = "purple",
+      "Giant Spined Star" = "green"
+    ),
+    name = "Species"
+  ) +
+  labs(
+    title = "Total Number of Invertebrates by Disease Severity and Species",
+    x = "Disease Severity (Health Status)",
+    y = "Total Invertebrate Count",
+    subtitle = "Distribution of disease severity by species",
+    caption = "Data Source: Kelp Disease Dataset"
+  ) +
+  facet_wrap(~ species) +
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
+  custom_theme()  # Apply custom theme
 
 
-# Raw values for depth
-chart_depth <- ggplot(kelp_disease_data,
-                      aes(x = depth)) + 
-  geom_bar() +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90,
-                                   hjust = 1))
-chart_depth
 
-# Raw values for vegetation zone
-chart_vegetation_zone <- ggplot(df_side_blotched,
-                      aes(x = zone)) + 
-  geom_bar() +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90,
-                                   hjust = 1))
-chart_vegetation_zone
 
-# Raw values for whole tails
-chart_tails <- ggplot(df_side_blotched,
-                      aes(x = tail)) + 
-  geom_bar() +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90,
-                                   hjust = 1))
-chart_tails
+# Visualize distribution of depth
+kelp_disease_data_summary <- kelp_disease_data %>%
+  group_by(depth, species) %>%
+  summarize(total_count = sum(count), .groups = "drop")
+
+# Visualize the summed count of species by depth
+depth_counts <- ggplot(kelp_disease_data_summary, aes(x = depth, y = total_count, fill = species)) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Red Urchin Adult" = "red",
+      "Purple Urchin Adult" = "purple",
+      "Giant Spined Star" = "green"
+    ),
+    name = "Species"
+  ) +
+  labs(
+    title = "Total Number of Invertebrates by Depth",
+    x = "Depth (meters)",
+    y = "Total Invertebrate Count",
+    subtitle = "Total number of invertebrates by depth and species",
+    caption = "Data Source: Kelp Disease Dataset"
+  ) +
+  facet_wrap(~ species) +
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
+  custom_theme()  # Apply custom theme
+
+
+
+
+
+
+
+# Visualize distribution of size
+size_counts <- kelp_disease_data %>%
+  group_by(size, species) %>%
+  summarize(total_count = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = size, y = total_count, fill = species)) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Red Urchin Adult" = "red",
+      "Purple Urchin Adult" = "purple",
+      "Giant Spined Star" = "green"
+    ),
+    name = "Species"
+  ) +
+  labs(
+    title = "Total Number of Invertebrates by Size",
+    x = "Size (cm)",
+    y = "Total Count of Invertebrates",
+    subtitle = "Total number of invertebrates by size and species",
+    caption = "Data Source: Kelp Disease Dataset"
+  ) +
+  facet_wrap(~ species) +
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
+  custom_theme()  # Apply custom theme
+
+
+
+
+
+# Visualize distribution of species (categorical)
+invert_counts <- kelp_disease_data %>%
+  group_by(species) %>%
+  summarize(total_count = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = species, y = total_count, fill = species)) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Red Urchin Adult" = "red",
+      "Purple Urchin Adult" = "purple",
+      "Giant Spined Star" = "green"
+    ),
+    name = "Species"
+  ) +
+  labs(
+    title = "Total Number of Each Invertebrate Species",
+    x = "Species",
+    y = "Total Count",
+    subtitle = "Total number of individuals per species",
+    caption = "Data Source: Kelp Disease Dataset"
+  ) +
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
+  custom_theme()  # Apply custom theme
+
+
+
+
+
+# Visualize distribution of zones (categorical)
+zone_counts <- kelp_disease_data %>%
+  group_by(zone, species) %>%
+  summarize(total_count = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = zone, y = total_count, fill = species)) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Red Urchin Adult" = "red",
+      "Purple Urchin Adult" = "purple",
+      "Giant Spined Star" = "green"
+    ),
+    name = "Species"
+  ) +
+  labs(
+    title = "Total Number of Invertebrates by Zone",
+    x = "Zone",
+    y = "Total Invertebrate Count",
+    subtitle = "Total number of individuals per species in each zone",
+    caption = "Data Source: Kelp Disease Dataset"
+  ) +
+  facet_wrap(~ species) +
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
+  custom_theme()  # Apply custom theme
+
+
+
+# View Plots
+invert_counts
+size_counts
+depth_counts
+disease_counts
+zone_counts
+
+```
+# Check for correlations between continuous predictors (depth, size)
+```{r}
+kelp_disease_data_grouped <- kelp_disease_data %>%
+  group_by(depth, size, species, month, zone, site, transect, disease_severity_binary) %>%
+  summarize(total_count = sum(count), .groups = "drop")
+
+cor(kelp_disease_data_grouped %>%
+      select(depth, size))
 ```
 
 ### 3. Fit Regression Model
-### 4. Evaluate Model Diagnostics
-### 5. Interpret the Model and Communicate the Results
-
-
-
 ```{r}
-model <- glm(
-  disease_binary ~
-    depth +
-    size +
-    month +
-    year +
-    zone,
-  data = kelp_disease_data,
-  family = "binomial"
-)
-summary(model)
 
-simulateResiduals(model) %>% 
-  plot()
+model_binary <- glmer(
+  disease_severity_binary ~ depth + size + species + month + zone + 
+    (1 | site) + (1 | transect),
+  data = kelp_disease_data_grouped,
+  family = binomial
+)
+
+# Summary of the model
+summary(model_binary)
+
+# Calculate Cook's Distance
+cooks_distance <- cooks.distance(model_binary)
+
+# Filter out observations with high Cook's distance (threshold = 4/n)
+kelp_disease_data_cooks <- kelp_disease_data[which(cooks_distance < (4 / nrow(kelp_disease_data))), ]
+
+
+# Without Transect and outliers
+model_binary2 <- glmer(
+  disease_severity_binary ~ depth + size + species + month + zone + 
+    (1 | site),
+  data = kelp_disease_data_cooks,
+  family = binomial
+)
+
+# Summary of the model
+summary(model_binary2)
+
+
+
 ```
 
+### 4. Evaluate Model Diagnostics
+```{r}
+# Extract residuals and fitted values
+kelp_disease_data_cooks$residuals <- resid(model_binary2)
+kelp_disease_data_cooks$fitted_values <- fitted(model_binary2)
+
+# 1. Residuals vs Fitted Plot
+plot(kelp_disease_data_cooks$fitted_values, kelp_disease_data_cooks$residuals, 
+     xlab = "Fitted Values", ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")  # Add a horizontal line at 0
+
+# 2. Normal Q-Q Plot
+qqnorm(kelp_disease_data_cooks$residuals)
+qqline(kelp_disease_data_cooks$residuals, col = "red")  # Add a Q-Q line
+
+# 3. Scale-Location Plot (Spread-Location)
+sqrt_residuals <- sqrt(abs(kelp_disease_data_cooks$residuals))
+plot(kelp_disease_data_cooks$fitted_values, sqrt_residuals, 
+     xlab = "Fitted Values", ylab = "Sqrt(|Residuals|)",
+     main = "Scale-Location Plot")
+abline(h = 0, col = "red")
+
+# 4. Residuals vs Leverage Plot (using hat-values)
+hat_values <- hatvalues(model_binary2)
+plot(hat_values, kelp_disease_data_cooks$residuals,
+     xlab = "Leverage (Hat-Values)", ylab = "Residuals",
+     main = "Residuals vs Leverage")
+abline(h = 0, col = "red")
+```
