@@ -48,6 +48,7 @@ custom_theme <- function() {
 ### Tidy Data
 ```{r}
 kelp_disease_data <- kelp_data %>% 
+  # filter and change disease data for data analysis
   filter(disease %in% c("SEVERE", "MILD", "HEALTHY", "YES", "WASTING", "BLACK SPOT")) %>%
   mutate(disease_severity = factor(
     case_when(
@@ -58,11 +59,14 @@ kelp_disease_data <- kelp_data %>%
       disease == "BLACK SPOT" ~ "Severe",# Black spot treated as Severe
       disease == "SEVERE" ~ "Severe"     # Severe
     ),
-   levels = c("Healthy", "Mild", "Severe")  # Simplify to a regular factor
+   levels = c("Healthy", "Mild", "Severe")
   )) %>% 
+  # Make disease data binary
  mutate(disease_severity_binary = ifelse(disease_severity == "Healthy", 0, 1)) %>% 
   filter(!is.na(disease_severity)) %>%
+  # Filter to only UCSC Campus
   filter(campus == "UCSC") %>%
+  # Select only the species most affected by disease, change to their common names
   mutate(
     invertebrates = case_when(
       classcode == "PATMIN" ~ NA_character_,
@@ -81,6 +85,7 @@ kelp_disease_data <- kelp_data %>%
     )) %>%
   filter(!is.na(invertebrates)) %>%
   filter(!is.na(size) & size > 0) %>% 
+  # Change character variables to factors for analysis
   mutate(
     month = factor(month),
     year = factor(year),
@@ -90,6 +95,7 @@ kelp_disease_data <- kelp_data %>%
     zone = factor(zone, levels = c("INNER",
                                    "MID",
                                    "OUTER"))) %>% 
+  # Tidy dataset by selecting only relevant columns
   select(-observer,
          -notes,
          -site_name_old,
@@ -139,8 +145,8 @@ disease_counts <- kelp_disease_data %>%
     caption = "Data Source: Kelp Disease Dataset"
   ) +
   facet_wrap(~ species) +
-  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
-  custom_theme()  # Apply custom theme
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +
+  custom_theme()
 
 
 
@@ -169,8 +175,8 @@ depth_counts <- ggplot(kelp_disease_data_summary, aes(x = depth, y = total_count
     caption = "Data Source: Kelp Disease Dataset"
   ) +
   facet_wrap(~ species) +
-  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
-  custom_theme()  # Apply custom theme
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +
+  custom_theme()
 
 
 
@@ -200,8 +206,8 @@ size_counts <- kelp_disease_data %>%
     caption = "Data Source: Kelp Disease Dataset"
   ) +
   facet_wrap(~ species) +
-  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
-  custom_theme()  # Apply custom theme
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +
+  custom_theme()
 
 
 
@@ -228,8 +234,8 @@ invert_counts <- kelp_disease_data %>%
     subtitle = "Total number of individuals per species",
     caption = "Data Source: Kelp Disease Dataset"
   ) +
-  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
-  custom_theme()  # Apply custom theme
+  scale_y_continuous(trans = 'log10', labels = scales::comma) + 
+  custom_theme() 
 
 
 
@@ -257,8 +263,8 @@ zone_counts <- kelp_disease_data %>%
     caption = "Data Source: Kelp Disease Dataset"
   ) +
   facet_wrap(~ species) +
-  scale_y_continuous(trans = 'log10', labels = scales::comma) +  # Format y-axis labels with commas
-  custom_theme()  # Apply custom theme
+  scale_y_continuous(trans = 'log10', labels = scales::comma) +
+  custom_theme() 
 
 
 
@@ -282,7 +288,6 @@ cor(kelp_disease_data_grouped %>%
 
 ### 3. Fit Regression Model
 ```{r}
-
 model_binary <- glmer(
   disease_severity_binary ~ depth + size + species + month + zone + 
     (1 | site) + (1 | transect),
@@ -321,24 +326,24 @@ summary(model_binary2)
 kelp_disease_data_cooks$residuals <- resid(model_binary2)
 kelp_disease_data_cooks$fitted_values <- fitted(model_binary2)
 
-# 1. Residuals vs Fitted Plot
+# Residuals vs Fitted Plot
 plot(kelp_disease_data_cooks$fitted_values, kelp_disease_data_cooks$residuals, 
      xlab = "Fitted Values", ylab = "Residuals",
      main = "Residuals vs Fitted Values")
-abline(h = 0, col = "red")  # Add a horizontal line at 0
+abline(h = 0, col = "red")
 
-# 2. Normal Q-Q Plot
+# Normal Q-Q Plot
 qqnorm(kelp_disease_data_cooks$residuals)
-qqline(kelp_disease_data_cooks$residuals, col = "red")  # Add a Q-Q line
+qqline(kelp_disease_data_cooks$residuals, col = "red")
 
-# 3. Scale-Location Plot (Spread-Location)
+# Scale-Location Plot (Spread-Location)
 sqrt_residuals <- sqrt(abs(kelp_disease_data_cooks$residuals))
 plot(kelp_disease_data_cooks$fitted_values, sqrt_residuals, 
      xlab = "Fitted Values", ylab = "Sqrt(|Residuals|)",
      main = "Scale-Location Plot")
 abline(h = 0, col = "red")
 
-# 4. Residuals vs Leverage Plot (using hat-values)
+# Residuals vs Leverage Plot (using hat-values)
 hat_values <- hatvalues(model_binary2)
 plot(hat_values, kelp_disease_data_cooks$residuals,
      xlab = "Leverage (Hat-Values)", ylab = "Residuals",
