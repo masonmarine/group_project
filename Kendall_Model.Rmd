@@ -126,7 +126,7 @@ species_counts <- inverts_summarized %>%
 #create labels for graph
 labels <- c("MACPYRAD"="Giant Kelp", 
                               "PUGPRO"="Northern Kelp Crab",
-                              "PYCHEL"="Southern Sea Star", 
+                              "PYCHEL"="Sunflower Sea Star", 
                               "STRPURAD" = "Purple Urchin")
 
 #create facet-wrapped figure to show species counts by year
