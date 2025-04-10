@@ -298,6 +298,10 @@ model_binary <- glmer(
 # Summary of the model
 summary(model_binary)
 
+# transect not having much effect
+
+
+# Remove Outliers
 # Calculate Cook's Distance
 cooks_distance <- cooks.distance(model_binary)
 
@@ -326,11 +330,21 @@ summary(model_binary2)
 kelp_disease_data_cooks$residuals <- resid(model_binary2)
 kelp_disease_data_cooks$fitted_values <- fitted(model_binary2)
 
+# DHARMA residual plot for glmer
+# we did inspect residuals and removed outliers
+
 # Residuals vs Fitted Plot
 plot(kelp_disease_data_cooks$fitted_values, kelp_disease_data_cooks$residuals, 
      xlab = "Fitted Values", ylab = "Residuals",
      main = "Residuals vs Fitted Values")
 abline(h = 0, col = "red")
+
+# DHARMA
+# Simulate residuals
+simulation_output <- simulateResiduals(fittedModel = model_binary2)
+
+# Plot diagnostic plots
+plot(simulation_output)
 
 # Normal Q-Q Plot
 qqnorm(kelp_disease_data_cooks$residuals)
