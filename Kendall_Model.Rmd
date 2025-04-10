@@ -49,7 +49,7 @@ inverts_wide_grouped <- inverts_summarized %>%
   group_by(classcode, survey_year, zone) %>%
   summarise(across(c(total_count), sum, na.rm = TRUE), .groups = "drop")
 
-#pivot to wide format to separate out species
+#pivot to wide format to separate out species into separate rows
 inverts_wide <- inverts_wide_grouped %>%
   pivot_wider(names_from = classcode, values_from = total_count, values_fill = list(total_count = 0))
 
