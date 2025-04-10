@@ -39,11 +39,11 @@ custom_theme <- function() {
 
 # Step 1: Define the Research Question
 
-# Research Question: What environmental and biological factors (e.g., depth, size, species, site) are associated with different severities of disease in invertebrates in UCSC kelp forests?
+# Research Question: What environmental and biological factors (e.g., depth, size, species, site) are associated with different severities of disease (or presence of disease?) in invertebrates in UCSC kelp forests?
 
 # Hypotheses:
-# Null Hypothesis (H₀): None of the predictors (depth, size, species, etc.) are significantly associated with disease severity.
-# Alternative Hypothesis (H₁): At least one of the predictors significantly affects disease severity.
+# Null Hypothesis (H₀): None of the predictors (depth, size, species, etc.) are significantly associated with disease severity (or presence?).
+# Alternative Hypothesis (H₁): At least one of the predictors significantly affects disease severity (or presence?).
 
 ### Tidy Data
 ```{r}
