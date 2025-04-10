@@ -71,7 +71,8 @@ Alternative Hypothesis: Invertebrate presence and habitat zone do have a correla
 #histogram of giant kelp
 kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD)) +
   geom_histogram() +
-   labs(x = "Giant Kelp") +
+   labs(x = "Giant Kelp",
+        title = "Giant Kelp Abundance in Northern CA Kelp Forests") +
   theme_bw()
 
 kelp_fig
@@ -79,15 +80,15 @@ kelp_fig
 #histogram of Northern kelp crab
 crab_fig <- ggplot(inverts_wide, aes(x = PUGPRO)) +
   geom_histogram() +
-   labs(x = "Northern Kelp Crab") +
-  theme_bw()
-
+   labs(x = "Northern Kelp Crab",
+        title = "Northern Kelp Crab Abundance in Northern CA Kelp Forests")
 crab_fig
 
 #histogram of Sunflower Sea Star
 seastar_fig <- ggplot(inverts_wide, aes(x = PYCHEL)) +
   geom_histogram() +
-   labs(x = "Sunflower Sea Star") +
+   labs(x = "Sunflower Sea Star",
+        title = "Sunflower Sea Star Abundance in Northern CA Kelp Forests") +
   theme_bw()
 
 seastar_fig
@@ -95,7 +96,8 @@ seastar_fig
 #histogram of purple urchin 
 urchin_fig <- ggplot(inverts_wide, aes(x = STRPURAD)) +
   geom_histogram() +
-   labs(x = "Purple Urchin") +
+   labs(x = "Purple Urchin",
+        title = "Purple Urchin Abundance in Northern CA Kelp Forests") +
   theme_bw()
 
 urchin_fig
@@ -106,7 +108,8 @@ zone_fig <- ggplot(inverts_kelp, aes(x = zone,
                                      fill = zone)) +
   geom_bar(stat = "identity") +
      labs(y = "Count",
-       x = "Zone") +
+       x = "Zone",
+       title = "Transect Survey Zone Distribution") +
   theme_bw()
 
 zone_fig
@@ -114,7 +117,7 @@ zone_fig
 ```
 
 ### Relationship figures of species through time 
-```{r warning=FALSE}
+```{r warning=FALSE, fig.cap = "This figure shows the abundance of species used in the model over time. The black dotted line sitting at the year 2013 indicates the first large marine heatwave during that time period. This heatwave significantly contributed to the alteration of the kelp forest ecosystem."}
 #first tidy data so that it can be more easily understood by ggplot; summarize the counts by species and year (not separated by zone)
 species_counts <- inverts_summarized %>%
   group_by(classcode, survey_year) %>%
@@ -134,12 +137,11 @@ species_separate <- ggplot(species_counts, aes(x = survey_year, y = total_count)
   facet_wrap(~ classcode, scales = "free_y", labeller = labeller(classcode = labels))+
   labs(title = "Distribution of Kelp Forest Species Abundance Used in Model Over Time",
        x = "Survey Year",
-       y = "Total Count",
-       caption = "Figure 1. This figure shows the abundance of species used in the model over time. The black dotted line sitting at the year 2013 indicates the first large marine heatwave during that time period. This heatwave significantly contributed to the alteration of the kelp forest ecosystem.") +
+       y = "Total Count") +
   theme_bw() +
   theme(strip.text = element_text(face = "bold"),
         axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
         legend.position = "none")
 
 species_separate
