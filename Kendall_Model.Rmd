@@ -50,9 +50,24 @@ inverts_wide_grouped <- inverts_summarized %>%
   group_by(classcode, survey_year, zone) %>%
   summarise(across(c(total_count), sum, na.rm = TRUE), .groups = "drop")
 
+#calculate the sum of all observations
+sum(inverts_wide_grouped$total_count)
+
 #pivot to wide format to separate out species into separate rows
 inverts_wide <- inverts_wide_grouped %>%
   pivot_wider(names_from = classcode, values_from = total_count, values_fill = list(total_count = 0))
+
+#calculate the sum of giant kelp observations
+sum(inverts_wide$MACPYRAD)
+
+#calculate the sum of northern kelp crab observations
+sum(inverts_wide$PUGPRO)
+
+#calculate the sum of sunflower sea star observations
+sum(inverts_wide$PYCHEL)
+
+#calculate the sum of purple urchin observations
+sum(inverts_wide$STRPURAD)
 
 ```
 
@@ -72,7 +87,8 @@ Alternative Hypothesis: Invertebrate presence and habitat zone do have a correla
 #histograms of species count
 
 #histogram of giant kelp
-kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD)) +
+kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD,
+                                     fill = "lightgreen")) +
   geom_histogram() +
    labs(x = "Giant Kelp",
         title = "Giant Kelp Abundance in Northern CA Kelp Forests") +
@@ -81,14 +97,16 @@ kelp_fig <- ggplot(inverts_wide, aes(x = MACPYRAD)) +
 kelp_fig
 
 #histogram of Northern kelp crab
-crab_fig <- ggplot(inverts_wide, aes(x = PUGPRO)) +
+crab_fig <- ggplot(inverts_wide, aes(x = PUGPRO,
+                                     fill = "lightpink")) +
   geom_histogram() +
    labs(x = "Northern Kelp Crab",
         title = "Northern Kelp Crab Abundance in Northern CA Kelp Forests")
 crab_fig
 
 #histogram of Sunflower Sea Star
-seastar_fig <- ggplot(inverts_wide, aes(x = PYCHEL)) +
+seastar_fig <- ggplot(inverts_wide, aes(x = PYCHEL,
+                                        fill = "lightblue")) +
   geom_histogram() +
    labs(x = "Sunflower Sea Star",
         title = "Sunflower Sea Star Abundance in Northern CA Kelp Forests") +
@@ -97,7 +115,8 @@ seastar_fig <- ggplot(inverts_wide, aes(x = PYCHEL)) +
 seastar_fig
 
 #histogram of purple urchin 
-urchin_fig <- ggplot(inverts_wide, aes(x = STRPURAD)) +
+urchin_fig <- ggplot(inverts_wide, aes(x = STRPURAD,
+                                       fill = "purple")) +
   geom_histogram() +
    labs(x = "Purple Urchin",
         title = "Purple Urchin Abundance in Northern CA Kelp Forests") +
@@ -196,6 +215,18 @@ plot(kelp_glm_nb)
 #take out relevant outliers based on residual plots
 inverts_final <- inverts_wide[-c(26, 29, 63), ]
 
+#calculate the new sum of giant kelp observations
+sum(inverts_final$MACPYRAD)
+
+#calculate the new sum of northern kelp crab observations
+sum(inverts_final$PUGPRO)
+
+#calculate the new sum of sunflower sea star observations
+sum(inverts_final$PYCHEL)
+
+#calculate the new sum of purple urchin observations
+sum(inverts_final$STRPURAD)
+
 #refit model without outliers
 kelp_glm_refit <- glm.nb(MACPYRAD ~ PUGPRO + STRPURAD + PYCHEL + zone,
                        data = inverts_final)
@@ -215,7 +246,7 @@ The results of the Akaike Information Criterion (AIC) test showed that the re-fi
 
 ## Step 5 - Interpret the model and communicate the results
 
-```{r eval=FALSE, include=FALSE}
+```{r, include=TRUE}
 library(broom)
 library(knitr)
 library(gt)
@@ -249,7 +280,9 @@ model_table_simple <- broom::tidy(kelp_glm_refit) %>%
     `P-value` = p.value)
 
 #use kable package to make it a more attractive output
-kable(model_table_simple, caption = "Negative Binomial Regression Model Coefficients")
+nbmodel_table <- kable(model_table_simple, caption = "Negative Binomial Regression Model Coefficients")
+
+nbmodel_table
 
 
 ```
